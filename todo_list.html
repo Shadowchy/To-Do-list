@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern To-Do List</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #2c3e50;
+            margin: 0;
+            color: #ecf0f1;
+        }
+
+        .container {
+            background: #34495e;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+            padding: 20px;
+        }
+
+        .container h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 700;
+            color: #ecf0f1;
+        }
+
+        .task-input, .login-form {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .task-input input, .login-form input {
+            width: 70%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .task-input button, .login-form button {
+            width: 25%;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .task-input button:hover, .login-form button:hover {
+            background: #2ecc71;
+        }
+
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .task-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #3b4d61;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .task-list li.completed {
+            text-decoration: line-through;
+            color: #95a5a6;
+        }
+
+        .task-list li button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+            transition: color 0.3s;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .task-list li button.edit {
+            background: #3498db;
+            color: white;
+        }
+
+        .task-list li button.edit:hover {
+            background: #2980b9;
+        }
+
+        .task-list li button.delete {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .task-list li button.delete:hover {
+            background: #c0392b;
+        }
+
+        .task-list li button.toggle {
+            background: #27ae60;
+            color: white;
+        }
+
+        .task-list li button.toggle:hover {
+            background: #2ecc71;
+        }
+
+        .clear-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            transition: background 0.3s;
+        }
+
+        .clear-button:hover {
+            background: #2980b9;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 140px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position above the element */
+            left: 50%;
+            margin-left: -70px; /* Center the tooltip */
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="loginContainer">
+        <h1>Login</h1>
+        <div class="login-form">
+            <input type="text" id="username" placeholder="Enter your username">
+            <button onclick="login()">Login</button>
+        </div>
+    </div>
+
+    <div class="container" id="todoContainer" style="display: none;">
+        <h1>To-Do List</h1>
+        <div class="task-input">
+            <input type="text" id="taskInput" placeholder="Enter a new task">
+            <button onclick="addTask()">Add Task</button>
+        </div>
+        <ul class="task-list" id="taskList"></ul>
+        <button class="clear-button" onclick="clearCompletedTasks()">Clear Completed Tasks</button>
+    </div>
+
+    <script>
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || {};
+        let currentUser = localStorage.getItem('currentUser') || null;
+
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            if (username) {
+                currentUser = username;
+                localStorage.setItem('currentUser', currentUser);
+                if (!tasks[currentUser]) {
+                    tasks[currentUser] = [];
+                }
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('todoContainer').style.display = 'block';
+                renderTasks();
+            } else {
+                alert('Please enter a username.');
+            }
+        }
+
+        function addTask() {
+            const taskInput = document.getElementById('taskInput');
+            const taskText = taskInput.value.trim();
+            if (taskText !== '') {
+                tasks[currentUser].push({ text: taskText, completed: false });
+                taskInput.value = '';
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        function toggleTask(index) {
+            tasks[currentUser][index].completed = !tasks[currentUser][index].completed;
+            saveTasks();
+            renderTasks();
+        }
+
+        function editTask(index) {
+            const newTaskText = prompt('Edit your task:', tasks[currentUser][index].text);
+            if (newTaskText !== null && newTaskText.trim() !== '') {
+                tasks[currentUser][index].text = newTaskText.trim();
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        function deleteTask(index) {
+            tasks[currentUser].splice(index, 1);
+            saveTasks();
+            renderTasks();
+        }
+
+        function clearCompletedTasks() {
+            tasks[currentUser] = tasks[currentUser].filter(task => !task.completed);
+            saveTasks();
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            tasks[currentUser].forEach((task, index) => {
+                const taskItem = document.createElement('li');
+                taskItem.className = task.completed ? 'completed' : '';
+
+                const taskText = document.createElement('span');
+                taskText.textContent = task.text;
+                taskItem.appendChild(taskText);
+
+                const toggleButton = document.createElement('button');
+                toggleButton.className = 'toggle tooltip';
+                toggleButton.innerHTML = 'Complete';
+                toggleButton.onclick = () => toggleTask(index);
+                const toggleTooltip = document.createElement('span');
+                toggleTooltip.className = 'tooltiptext';
+                toggleTooltip.innerHTML = 'Mark as completed';
+                toggleButton.appendChild(toggleTooltip);
+                taskItem.appendChild(toggleButton);
+
+                const editButton = document.createElement('button');
+                editButton.className = 'edit tooltip';
+                editButton.innerHTML = 'Edit';
+                editButton.onclick = () => editTask(index);
+                const editTooltip = document.createElement('span');
+                editTooltip.className = 'tooltiptext';
+                editTooltip.innerHTML = 'Edit task';
+                editButton.appendChild(editTooltip);
+                taskItem.appendChild(editButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete tooltip';
+                deleteButton.innerHTML = 'Delete';
+                deleteButton.onclick = () => deleteTask(index);
+                const deleteTooltip = document.createElement('span');
+                deleteTooltip.className = 'tooltiptext';
+                deleteTooltip.innerHTML = 'Delete task';
+                deleteButton.appendChild(deleteTooltip);
+                taskItem.appendChild(deleteButton);
+
+                taskList.appendChild(taskItem);
+            });
+        }
+
+        if (currentUser) {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('todoContainer').style.display = 'block';
+            renderTasks();
+        }
+    </script>
+</body>
+</html>
+<!-- ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡴⠞⠛⣉⡉⠄⠀⠀⠀⠀⠀⠐⠯⣛⡳⢦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡴⢛⡡⠔⠚⣉⡀⠄⠀⠀⠒⠀⠀⠀⠀⠀⠀⠈⠓⠪⣝⡳⢤⣀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⣀⡴⢛⡥⢒⡩⠔⣒⣩⡥⠶⠖⠚⠛⠛⠓⠶⠦⢤⣄⣈⠑⠢⢄⡀⠉⠲⢝⠳⣤⡀⠀⠀⠀⠀
+⠀⠀⠀⠀⢀⣤⠞⢉⣔⡯⢒⣥⠶⠛⣉⣤⣶⣶⣿⣿⣿⣿⣿⣿⠿⢷⣾⣯⣟⡶⣤⣈⠲⠀⠀⠑⢬⠙⢦⡀⠀⠀
+⠀⠀⢀⡴⠟⠁⣴⢟⣡⡾⢋⣥⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣤⣤⡈⠻⣿⣿⣿⣯⣻⣦⣅⡀⠀⠀⠀⠙⢷⣄
+⣠⡼⠋⠀⠀⣠⡴⣛⣥⣾⣿⣿⣿⢿⡟⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡇⢸⠻⣿⣿⣿⣿⣮⣿⡦⠀⠀⠀⠀⠉
+⠉⠀⠀⣠⣾⣯⡾⠟⠋⠀⢻⣿⣿⠘⡇⠙⠙⣿⣿⣿⣿⣿⣿⣿⣿⣿⢿⠃⣼⠀⣾⠉⡏⢸⡟⠛⠛⣷⠀⠀
+⠀⠀⣨⣷⡟⢹⠀⠀⠀⠀⠀⠈⢻⣆⠹⡄⠀⠈⠛⠿⣿⣿⣿⣿⠿⣫⠎⡰⠃⣼⠃⠘⠁⣼⠁⣠⣾⡏⠀⠁⠀
+⠀⠸⣿⣽⣷⣤⣄⡀⠀⡀⠀⠀⠀⠙⠷⣤⡀⠀⠀⠀⠀⠀⠀⠀⠈⣡⠞⣡⠞⠁⠀⠀⢀⣡⣾⣿⠋⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠉⠙⠳⢮⣗⣦⣀⣀⠀⠈⠙⠷⠶⢤⣤⣤⣤⣤⡾⠿⠛⠁⠀⢀⣠⣶⣿⡿⢋⣰⠆⡀⠀⠀⠀⠀
+⠀⠙⠛⠛⠛⠳⢦⣄⡀⠀⠈⠙⠻⠾⢿⣶⣦⣄⠀⠀⠀⠀⠀⠀⠀⣀⣀⣤⣶⣿⠿⠛⢉⣤⠞⣡⠞⠁⠀⠀⠀⠀
+⠀⠀⠀⠀⢠⡳⢤⣉⠛⠳⠶⣤⣄⣀⡀⠀⠉⠙⠛⠛⠛⠛⠛⠛⠛⠛⠛⠉⠉⢀⣠⡶⠋⣡⠞⡡⠚⠀
+⠀⠀⠀⠀⠰⣝⡳⠮⣭⠂⠀⠀⠈⠉⠙⢛⠶⠶⢶⣤⣤⣄⣀⣀⣠⣤⣴⠶⠟⠋⠁⠰⠋⠕⣊⠴⠂⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ -->
